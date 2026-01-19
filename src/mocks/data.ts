@@ -1,3 +1,7 @@
+import { format } from "date-fns";
+
+const getTodayYYYYMMDD = () => format(new Date(), "yyyy-MM-dd");
+
 export const rooms = [
   { id: "room-1", name: "회의실 A", floor: 1, capacity: 4, equipments: ["tv", "whiteboard"] },
   {
@@ -29,7 +33,7 @@ export const reservations: Reservation[] = [
   {
     id: "res-1",
     roomId: "room-1",
-    date: new Date().toISOString().split("T")[0],
+    date: getTodayYYYYMMDD(),
     start: "09:00",
     end: "10:00",
     attendees: 3,
@@ -39,7 +43,7 @@ export const reservations: Reservation[] = [
   {
     id: "res-2",
     roomId: "room-2",
-    date: new Date().toISOString().split("T")[0],
+    date: getTodayYYYYMMDD(),
     start: "14:00",
     end: "16:00",
     attendees: 6,
@@ -49,7 +53,7 @@ export const reservations: Reservation[] = [
   {
     id: "res-3",
     roomId: "room-3",
-    date: new Date().toISOString().split("T")[0],
+    date: getTodayYYYYMMDD(),
     start: "10:00",
     end: "12:00",
     attendees: 15,
