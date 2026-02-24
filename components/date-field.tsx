@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import { Button } from "./ui/button";
 import { Calendar } from "./ui/calendar";
 import { Label } from "./ui/label";
@@ -17,12 +18,13 @@ const DateField = ({ label, value, onSelect }: DateFieldProps) => {
   const currentValue = isControlled ? value : selectedDate;
 
   const handleDateChange = (date?: Date) => {
-    if (isControlled) {
-      onSelect?.(date ? date : undefined);
-    } else {
+    onSelect?.(date);
+
+    if (!isControlled) {
       setSelectedDate(date);
     }
   };
+
   return (
     <>
       <Label>{label}</Label>

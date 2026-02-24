@@ -12,19 +12,25 @@ import {
 } from "@/components/ui/sub-card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { queries } from "@/src/shared/api/queries";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
 import { Presentation, Tv, Video, Volume2 } from "lucide-react";
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { RoomSelect } from "./room-select";
 
+// 사용자가 날짜를 변경하면 해당 날짜의 예약 현황을 다시 불러와야 합니다
 export function BookingTab() {
   const [selectedRoomId, setSelectedRoomId] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const date = searchParams.get("date") || "";
 
   const { data: rooms } = useSuspenseQuery(queries.rooms());
-  const { data: reservations } = useSuspenseQuery(
-    queries.reservation("2026-02-23"),
-  );
+  const { data: reservations } = useQuery({
+    ...queries.reservation(date),
+    enabled: Boolean(date),
+  });
 
   return (
     <div className="space-y-6">
@@ -33,30 +39,34 @@ export function BookingTab() {
           <CardTitle>예약 현황</CardTitle>
         </CardHeader>
         <CardContent>
-          <DateField label="날짜 선택" />
-          {reservations.map((reservation) => (
-            <SubCard key={reservation.id}>
-              <SubCardHeader>{reservation.roomId}</SubCardHeader>
-              <SubCardContent>
-                <Badge variant="outline">
-                  {reservation.start} - {reservation.end}
-                </Badge>
-              </SubCardContent>
-            </SubCard>
-          ))}
-          <SubCard>
-            <SubCardHeader>회의실 1</SubCardHeader>
-            <SubCardContent>
-              <Badge variant="outline">10:00 - 11:00</Badge>
-              <Badge variant="outline">10:00 - 11:00</Badge>
-            </SubCardContent>
-          </SubCard>
-          <SubCard>
-            <SubCardHeader>회의실 2</SubCardHeader>
-            <SubCardContent>
-              <p className="text-muted-foreground text-sm">예약 없음</p>
-            </SubCardContent>
-          </SubCard>
+          <DateField
+            label="날짜 선택"
+            value={date ? new Date(date) : undefined}
+            onSelect={(selectedDate) => {
+              if (!selectedDate) {
+                return;
+              }
+              setSearchParams({ date: format(selectedDate, "yyyy-MM-dd") });
+            }}
+          />
+          {reservations?.map((reservation) => {
+            const hasReservation = reservation.start && reservation.end;
+
+            return (
+              <SubCard key={reservation.id}>
+                <SubCardHeader>{reservation.roomId}</SubCardHeader>
+                <SubCardContent>
+                  {hasReservation ? (
+                    <Badge variant="outline">
+                      {reservation.start} - {reservation.end}
+                    </Badge>
+                  ) : (
+                    <p className="text-muted-foreground text-sm">예약 없음</p>
+                  )}
+                </SubCardContent>
+              </SubCard>
+            );
+          })}
         </CardContent>
       </Card>
 
