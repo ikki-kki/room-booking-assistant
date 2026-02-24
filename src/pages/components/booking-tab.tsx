@@ -1,17 +1,31 @@
-import { Tv, Presentation, Video, Volume2, Building2, Users } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-import { Label } from "@/components/ui/label";
+import { DateField } from "@/components/date-field";
+import { InputField } from "@/components/input-field";
+import { SelectField } from "@/components/select-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import {
+  SubCard,
+  SubCardContent,
+  SubCardHeader,
+} from "@/components/ui/sub-card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { InputField } from "@/components/input-field";
-import { SubCard, SubCardContent, SubCardHeader } from "@/components/ui/sub-card";
-import { SelectField } from "@/components/select-field";
-import { DateField } from "@/components/date-field";
+import { queries } from "@/src/shared/api/queries";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { Presentation, Tv, Video, Volume2 } from "lucide-react";
+import { useState } from "react";
+
 import { RoomSelect } from "./room-select";
 
 export function BookingTab() {
+  const [selectedRoomId, setSelectedRoomId] = useState("");
+
+  const { data: rooms } = useSuspenseQuery(queries.rooms());
+  const { data: reservations } = useSuspenseQuery(
+    queries.reservation("2026-02-23"),
+  );
+
   return (
     <div className="space-y-6">
       <Card>
@@ -20,6 +34,16 @@ export function BookingTab() {
         </CardHeader>
         <CardContent>
           <DateField label="날짜 선택" />
+          {reservations.map((reservation) => (
+            <SubCard key={reservation.id}>
+              <SubCardHeader>{reservation.roomId}</SubCardHeader>
+              <SubCardContent>
+                <Badge variant="outline">
+                  {reservation.start} - {reservation.end}
+                </Badge>
+              </SubCardContent>
+            </SubCard>
+          ))}
           <SubCard>
             <SubCardHeader>회의실 1</SubCardHeader>
             <SubCardContent>
@@ -58,7 +82,12 @@ export function BookingTab() {
 
           <div className="space-y-2">
             <Label>필요 장비</Label>
-            <ToggleGroup type="multiple" variant="outline" spacing={2} size="sm">
+            <ToggleGroup
+              type="multiple"
+              variant="outline"
+              spacing={2}
+              size="sm"
+            >
               <ToggleGroupItem value="tv">
                 <Tv className="h-4 w-4" />
                 TV
@@ -85,8 +114,20 @@ export function BookingTab() {
           <CardTitle>예약 가능한 회의실</CardTitle>
         </CardHeader>
         <CardContent>
-          <RoomSelect selected name="회의실 1" floor={1} capacity={4} equipments={["tv", "whiteboard"]} />
-          <RoomSelect name="회의실 2" floor={1} capacity={4} equipments={["tv", "whiteboard"]} />
+          {rooms.map((room) => {
+            return (
+              <RoomSelect
+                key={room.id}
+                onSelect={() => setSelectedRoomId(room.id)}
+                selected={selectedRoomId === room.id}
+                name={room.name}
+                floor={room.floor}
+                capacity={room.capacity}
+                equipments={room.equipments}
+              />
+            );
+          })}
+
           <Button size="lg">예약하기</Button>
         </CardContent>
       </Card>
