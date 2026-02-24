@@ -5,31 +5,29 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import {
-  SubCard,
-  SubCardContent,
-  SubCardHeader,
-} from "@/components/ui/sub-card";
+import { SubCard, SubCardContent, SubCardHeader } from "@/components/ui/sub-card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { queries } from "@/src/shared/api/queries";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { eachMinuteOfInterval, format, parse } from "date-fns";
 import { Presentation, Tv, Video, Volume2 } from "lucide-react";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { RoomSelect } from "./room-select";
 
-// 사용자가 날짜를 변경하면 해당 날짜의 예약 현황을 다시 불러와야 합니다
 export function BookingTab() {
   const [selectedRoomId, setSelectedRoomId] = useState("");
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
   const [searchParams, setSearchParams] = useSearchParams();
   const date = searchParams.get("date") || "";
+  const start = searchParams.get("start") || "";
+  const end = searchParams.get("end") || "";
 
   const { data: rooms } = useSuspenseQuery(queries.rooms());
-  const { data: reservations } = useQuery({
-    ...queries.reservation(date),
-    enabled: Boolean(date),
+  const { data: reservations } = useSuspenseQuery({
+    ...queries.reservation(format(selectedDate, "yyyy-MM-dd")),
   });
 
   return (
@@ -41,12 +39,12 @@ export function BookingTab() {
         <CardContent>
           <DateField
             label="날짜 선택"
-            value={date ? new Date(date) : undefined}
-            onSelect={(selectedDate) => {
-              if (!selectedDate) {
+            value={selectedDate}
+            onSelect={(_date) => {
+              if (!_date) {
                 return;
               }
-              setSearchParams({ date: format(selectedDate, "yyyy-MM-dd") });
+              setSelectedDate(_date);
             }}
           />
           {reservations?.map((reservation) => {
@@ -75,10 +73,43 @@ export function BookingTab() {
           <CardTitle>예약 조건</CardTitle>
         </CardHeader>
         <CardContent>
-          <DateField label="날짜" />
+          <DateField
+            label="날짜"
+            value={date ? new Date(date) : undefined}
+            onSelect={(_date) => {
+              if (!_date) {
+                return;
+              }
+              setSearchParams((searchParams) => {
+                searchParams.set("date", format(_date, "yyyy-MM-dd"));
+                return searchParams;
+              });
+            }}
+          />
           <InputField label="참석 인원" placeholder="1" type="number" min={1} />
-          <SelectField label="시작 시간" options={[]} />
-          <SelectField label="종료 시간" options={[]} />
+          <SelectField
+            label="시작 시간"
+            options={TIME_OPTIONS}
+            value={start}
+            onValueChange={(value) =>
+              setSearchParams((searchParams) => {
+                searchParams.set("start", value);
+                return searchParams;
+              })
+            }
+          />
+          <SelectField
+            label="종료 시간"
+            options={TIME_OPTIONS}
+            value={end}
+            onValueChange={(value) =>
+              setSearchParams((searchParams) => {
+                searchParams.set("end", value);
+                return searchParams;
+              })
+            }
+          />
+
           <SelectField
             label="선호 층 (선택)"
             options={[
@@ -92,12 +123,7 @@ export function BookingTab() {
 
           <div className="space-y-2">
             <Label>필요 장비</Label>
-            <ToggleGroup
-              type="multiple"
-              variant="outline"
-              spacing={2}
-              size="sm"
-            >
+            <ToggleGroup type="multiple" variant="outline" spacing={2} size="sm">
               <ToggleGroupItem value="tv">
                 <Tv className="h-4 w-4" />
                 TV
@@ -144,3 +170,22 @@ export function BookingTab() {
     </div>
   );
 }
+
+const TIME_OPTIONS = (() => {
+  const today = new Date();
+
+  const times = eachMinuteOfInterval(
+    {
+      start: parse("09:00", "HH:mm", today),
+      end: parse("20:00", "HH:mm", today),
+    },
+    { step: 30 },
+  );
+
+  return times.map((min) => {
+    return {
+      label: format(min, "HH:mm"),
+      value: format(min, "HH:mm"),
+    };
+  });
+})();
